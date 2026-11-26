@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YT Studio Helper — All-in-One</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: system-ui, sans-serif;
+            margin: 0;
+            padding: 16px 26px;
+            background: #121212;
+            color: #fff;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1240px;
+            margin: 0 auto 16px auto;
+            border-bottom: 1px solid #2b2b2b;
+            padding-bottom: 12px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .topbar h1 { margin: 0; font-size: 20px; }
+        .tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+        .tab-btn {
+            padding: 9px 16px;
+            border: 1px solid #383838;
+            background: #1e1e1e;
+            color: #ccc;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            width: auto;
+            margin: 0;
+        }
+        .tab-btn.active-red { background: #ff0000; color: #fff; border-color: #ff0000; }
+        .tab-btn.active-blue { background: #0078ff; color: #fff; border-color: #0078ff; }
+        .tab-btn.active-purple { background: #8a2be2; color: #fff; border-color: #8a2be2; }
+        .tab-btn.active-green { background: #00a846; color: #fff; border-color: #00a846; }
+
+        .panel { display: none; max-width: 1240px; margin: 0 auto; }
+        .panel.active { display: block; }
+
+        .landscape-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 18px;
+            align-items: start;
+        }
+        .box {
+            background: #1c1c1c;
+            padding: 16px;
+            border-radius: 10px;
+            border: 1px solid #2e2e2e;
+        }
+        .box h3 { margin: 0 0 10px 0; font-size: 15px; color: #eee; }
+
+        input[type="text"], input[type="file"], select, textarea, button {
+            width: 100%;
+            padding: 9px 11px;
+            margin: 5px 0;
+            border-radius: 6px;
+            border: none;
+            font-size: 13px;
+            font-family: inherit;
+        }
+        input[type="text"], input[type="file"], select, textarea {
+            background: #262626;
+            color: #fff;
+            border: 1px solid #444;
+        }
+        textarea { resize: vertical; min-height: 85px; }
+        button { background: #ff0000; color: #fff; font-weight: bold; cursor: pointer; }
+        button:hover { opacity: 0.9; }
+        .btn-blue { background: #0078ff; }
+        .btn-purple { background: #8a2be2; }
+        .btn-green { background: #00a846; }
+        .btn-gray { background: #333; }
+        .btn-sm { width: auto; padding: 5px 10px; font-size: 12px; margin: 0; }
+
+        label { font-size: 12px; color: #aaa; display: block; margin-top: 8px; }
+        .row { display: flex; gap: 10px; align-items: center; }
+        .row > div { flex: 1; }
+
+        video {
+            width: 100%;
+            max-height: 220px;
+            background: #000;
+            border-radius: 6px;
+            margin-top: 8px;
+        }
+        #previewBox { display: none; margin-top: 10px; }
+        #previewBox img, #grabbedImg { width: 100%; max-height: 210px; object-fit: contain; border-radius: 6px; background: #000; }
+        #videoTitle { font-size: 14px; margin: 8px 0 0 0; }
+
+        .progress-wrap {
+            display: none;
+            margin-top: 10px;
+            background: #252525;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #383838;
+        }
+        .bar-bg { width: 100%; height: 11px; background: #3a3a3a; border-radius: 6px; overflow: hidden; margin: 6px 0; }
+        .bar-fill { height: 100%; width: 0%; background: #00c853; transition: width 0.3s ease; }
+        .status-text { font-size: 13px; color: #ddd; word-break: break-word; }
+
+        .slider-row { display: flex; align-items: center; gap: 12px; margin: 6px 0; }
+        input[type="range"] { flex: 1; accent-color: #0078ff; cursor: pointer; }
+        .speed-badge { background: #0078ff; padding: 5px 12px; border-radius: 6px; font-weight: bold; min-width: 48px; text-align: center; font-size: 13px; }
+
+        .file-list { max-height: 260px; overflow-y: auto; margin-top: 8px; }
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            background: #252525;
+            padding: 8px 10px;
+            border-radius: 6px;
+            margin-bottom: 6px;
+            font-size: 12px;
+        }
+        .file-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+        .divider { border-top: 1px solid #333; margin: 14px 0; }
+    </style>
+</head>
+<body>
+    <div class="topbar">
+        <h1>🎬 YT Studio Helper</h1>
+        <div class="tabs">
+            <button id="tab-download" class="tab-btn active-red" onclick="switchTab('download')">⬇️ Download</button>
+            <button id="tab-edit" class="tab-btn" onclick="switchTab('edit')">⚡ Edit &amp; Shorts</button>
+            <button id="tab-thumb" class="tab-btn" onclick="switchTab('thumb')">🎨 Thumbnail + ChatGPT</button>
+            <button id="tab-upload" class="tab-btn" onclick="switchTab('upload')">📤 YouTube Upload</button>
+        </div>
+    </div>
+
+    <!-- PANEL 1: DOWNLOADER -->
+    <div id="panel-download" class="panel active">
+        <div class="landscape-grid">
+            <div class="box">
+                <h3>1. Paste YouTube / Instagram Link</h3>
+                <div class="row">
+                    <div style="flex: 3;"><input type="text" id="urlInput" placeholder="Paste video link here..." /></div>
+                    <div style="flex: 1;"><button onclick="fetchFormats()">Get Qualities</button></div>
+                </div>
+                <p id="fetchStatus" class="status-text"></p>
+                <div id="previewBox">
+                    <img id="thumb" src="" alt="Thumbnail" />
+                    <h4 id="videoTitle"></h4>
+                </div>
+            </div>
+
+            <div class="box">
+                <h3>2. Quality &amp; Clip Settings</h3>
+                <label>Select Quality / Format:</label>
+                <select id="resSelect">
+                    <option value="">-- Select Quality --</option>
+                </select>
+
+                <label>Optional: Download Only a Clip (Leave blank for full video)</label>
+                <div class="row">
+                    <div><input type="text" id="dlStart" placeholder="Start (e.g. 05:45 or 01:10:00)" /></div>
+                    <div><input type="text" id="dlEnd" placeholder="End (e.g. 10:30 or 01:15:00)" /></div>
+                </div>
+
+                <button onclick="startDownload()" style="margin-top: 10px;">Download Now</button>
+
+                <div id="dlProgressBox" class="progress-wrap">
+                    <div class="bar-bg"><div id="dlBar" class="bar-fill"></div></div>
+                    <div id="dlStatusText" class="status-text">Waiting...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PANEL 2: EDIT SPEED & SHORTS -->
+    <div id="panel-edit" class="panel">
+        <div class="landscape-grid">
+            <div class="box">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h3 style="margin: 0;">1. Select &amp; Preview Video</h3>
+                    <button class="btn-gray btn-sm" onclick="loadVideos()">↻ Refresh</button>
+                </div>
+                <select id="existingFileSelect" onchange="previewVideo('editPlayer', this.value)">
+                    <option value="">-- Select from 'not_uploaded' --</option>
+                </select>
+                <video id="editPlayer" controls></video>
+
+                <label>Or Upload Any Video from Computer (for Speed Edit):</label>
+                <input type="file" id="videoFileInput" accept="video/*" />
+            </div>
+
+            <div class="box">
+                <h3>2. Speed Editor (Selected Time or Full)</h3>
+                <div class="row">
+                    <div><input type="text" id="editStart" placeholder="Start (e.g. 01:00)" /></div>
+                    <div><input type="text" id="editEnd" placeholder="End (e.g. 02:30)" /></div>
+                </div>
+
+                <label>Speed (Normal = 1.0x):</label>
+                <div class="slider-row">
+                    <input type="range" id="speedSlider" min="1.0" max="4.0" step="0.1" value="1.5"
+                           oninput="document.getElementById('speedVal').innerText = parseFloat(this.value).toFixed(1) + 'x'" />
+                    <span id="speedVal" class="speed-badge">1.5x</span>
+                </div>
+                <button class="btn-blue" onclick="startEdit()">⚡ Apply Speed &amp; Save</button>
+
+                <div class="divider"></div>
+
+                <h3>3. 1-Click YouTube Shorts (9:16 Vertical)</h3>
+                <div class="row">
+                    <div><button class="btn-purple" onclick="startShorts('blur')">📱 Shorts (Blur BG)</button></div>
+                    <div><button class="btn-purple" onclick="startShorts('crop')">✂️ Shorts (Center Crop)</button></div>
+                </div>
+
+                <div id="editProgressBox" class="progress-wrap">
+                    <div class="bar-bg"><div id="editBar" class="bar-fill" style="background: #0078ff;"></div></div>
+                    <div id="editStatusText" class="status-text">Waiting...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PANEL 3: THUMBNAIL + CHATGPT -->
+    <div id="panel-thumb" class="panel">
+        <div class="landscape-grid">
+            <div class="box">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h3 style="margin: 0;">1. Grab HD Frame from Video</h3>
+                    <button class="btn-gray btn-sm" onclick="loadVideos()">↻ Refresh</button>
+                </div>
+                <select id="thumbFileSelect" onchange="previewVideo('thumbPlayer', this.value)">
+                    <option value="">-- Select video --</option>
+                </select>
+                <video id="thumbPlayer" controls></video>
+
+                <div class="row" style="margin-top: 8px;">
+                    <div style="flex: 2;"><input type="text" id="frameTime" placeholder="Timestamp (e.g. 00:01:25)" /></div>
+                    <div style="flex: 1;"><button class="btn-gray" onclick="useCurrentTime()">⏱️ Use Player Time</button></div>
+                </div>
+                <div class="row">
+                    <div><button class="btn-purple" onclick="grabFrame()">📸 Grab HD Frame</button></div>
+                    <div><button class="btn-blue" onclick="openThumbFolder()">📁 Open Thumbnails Folder</button></div>
+                </div>
+                <p id="grabStatus" class="status-text"></p>
+            </div>
+
+            <div class="box">
+                <h3>2. Make Thumbnail with ChatGPT</h3>
+                <img id="grabbedImg" src="" alt="Grabbed frame will appear here" style="display:none; margin-bottom: 10px;" />
+
+                <label>Thumbnail Prompt (Auto-copied when you click button):</label>
+                <textarea id="chatgptPrompt">Create a high-CTR, viral YouTube gaming thumbnail (16:9) using this screenshot. Make the colors vibrant, add dramatic lighting, sharpen the subject, and add bold yellow/white 3D Hindi/English text on the side: "OMG! 😱"</textarea>
+
+                <button class="btn-green" onclick="openChatGPT()" style="margin-top: 8px;">🎨 Copy Prompt &amp; Open ChatGPT</button>
+                <p class="status-text" style="color: #aaa; margin-top: 8px;">
+                    Tip: ChatGPT khulte hi <b>Ctrl + V</b> paste karo aur <code>thumbnails</code> folder se grabbed frame upload kar do!
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- PANEL 4: YOUTUBE UPLOAD & TEMPLATES -->
+    <div id="panel-upload" class="panel">
+        <div class="landscape-grid">
+            <div class="box">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h3 style="margin: 0;">📂 Not Uploaded (Ready for YouTube)</h3>
+                    <button class="btn-gray btn-sm" onclick="loadVideos()">↻ Refresh</button>
+                </div>
+                <div class="row" style="margin-top: 8px;">
+                    <div><button onclick="openYouTubeUpload()">📤 Open YouTube Upload</button></div>
+                    <div><button class="btn-blue" onclick="openFolder()">📁 Open Folder (Drag &amp; Drop)</button></div>
+                </div>
+                <div id="notUploadedList" class="file-list"></div>
+
+                <div class="divider"></div>
+                <h3>✅ Already Uploaded</h3>
+                <div id="uploadedList" class="file-list" style="max-height: 120px;"></div>
+            </div>
+
+            <div class="box">
+                <h3>📝 Saved Description &amp; Hashtags (1-Click Copy)</h3>
+                <label>Default Video Description:</label>
+                <textarea id="descTemplate" oninput="saveTemplates()" placeholder="Write your reusable YouTube description here..."></textarea>
+                <button class="btn-blue btn-sm" onclick="copyText('descTemplate')">📋 Copy Description</button>
+
+                <label style="margin-top: 12px;">Default Hashtags / Tags:</label>
+                <textarea id="tagsTemplate" style="min-height: 65px;" oninput="saveTemplates()" placeholder="#gta6 #gaming #shorts #hindi"></textarea>
+                <button class="btn-blue btn-sm" onclick="copyText('tagsTemplate')">📋 Copy Tags</button>
+                <p id="copyToast" class="status-text" style="color: #00c853; margin-top: 8px;"></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let dlTimer = null;
+        let editTimer = null;
+
+        // Load saved description & tags from browser storage
+        document.getElementById("descTemplate").value = localStorage.getItem("yt_desc") || "Thanks for watching! Like, Share & Subscribe for more videos.\n\nFollow me on Instagram: ";
+        document.getElementById("tagsTemplate").value = localStorage.getItem("yt_tags") || "#gta6 #gtavicecity #gaming #shorts #hindi";
+
+        function saveTemplates() {
+            localStorage.setItem("yt_desc", document.getElementById("descTemplate").value);
+            localStorage.setItem("yt_tags", document.getElementById("tagsTemplate").value);
+        }
+
+        function copyText(id) {
+            const val = document.getElementById(id).value;
+            navigator.clipboard.writeText(val);
+            const toast = document.getElementById("copyToast");
+            toast.innerText = "✅ Copied to clipboard!";
+            setTimeout(() => toast.innerText = "", 2000);
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+            document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active-red", "active-blue", "active-purple", "active-green"));
+
+            document.getElementById("panel-" + tab).classList.add("active");
+            if (tab === "download") document.getElementById("tab-download").classList.add("active-red");
+            if (tab === "edit") { document.getElementById("tab-edit").classList.add("active-blue"); loadVideos(); }
+            if (tab === "thumb") { document.getElementById("tab-thumb").classList.add("active-purple"); loadVideos(); }
+            if (tab === "upload") { document.getElementById("tab-upload").classList.add("active-green"); loadVideos(); }
+        }
+
+        function previewVideo(playerId, filename) {
+            const player = document.getElementById(playerId);
+            if (!filename) { player.removeAttribute("src"); player.load(); return; }
+            player.src = "/video/" + encodeURIComponent(filename);
+            player.load();
+        }
+
+        function useCurrentTime() {
+            const sec = Math.floor(document.getElementById("thumbPlayer").currentTime || 0);
+            const h = String(Math.floor(sec / 3600)).padStart(2, "0");
+            const m = String(Math.floor((sec % 3600) / 60)).padStart(2, "0");
+            const s = String(sec % 60).padStart(2, "0");
+            document.getElementById("frameTime").value = `${h}:${m}:${s}`;
+        }
+
+        async function loadVideos() {
+            try {
+                const res = await fetch("/list_videos");
+                const data = await res.json();
+
+                const editSel = document.getElementById("existingFileSelect");
+                const thumbSel = document.getElementById("thumbFileSelect");
+                const prevEdit = editSel.value;
+                const prevThumb = thumbSel.value;
+
+                const opts = `<option value="">-- Select from 'not_uploaded' --</option>` +
+                    data.not_uploaded.filter(f => !f.endsWith(".mp3")).map(f => `<option value="${f}">${f}</option>`).join("");
+
+                editSel.innerHTML = opts;
+                thumbSel.innerHTML = opts;
+                editSel.value = prevEdit;
+                thumbSel.value = prevThumb;
+
+                const notUpDiv = document.getElementById("notUploadedList");
+                notUpDiv.innerHTML = data.not_uploaded.length === 0
+                    ? `<p class="status-text" style="color:#888;">No pending videos.</p>`
+                    : data.not_uploaded.map(f => {
+                        const safe = f.replace(/'/g, "\\'");
+                        return `
+                        <div class="file-item">
+                            <span class="file-name" title="${f}">${f}</span>
+                            <button class="btn-gray btn-sm" onclick="renameVideo('${safe}')">✏️</button>
+                            <button class="btn-green btn-sm" onclick="markUploaded('${safe}')">✅ Uploaded</button>
+                        </div>`;
+                    }).join("");
+
+                const upDiv = document.getElementById("uploadedList");
+                upDiv.innerHTML = data.uploaded.length === 0
+                    ? `<p class="status-text" style="color:#888;">No uploaded videos yet.</p>`
+                    : data.uploaded.map(f => `<div class="file-item"><span class="file-name" title="${f}">✅ ${f}</span></div>`).join("");
+            } catch (e) {}
+        }
+
+        async function renameVideo(oldName) {
+            const base = oldName.replace(/\.[^/.]+$/, "");
+            const newTitle = prompt("Enter new clean YouTube title for this file:", base);
+            if (!newTitle || newTitle === base) return;
+
+            const res = await fetch("/rename_video", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ old_name: oldName, new_title: newTitle })
+            });
+            const data = await res.json();
+            if (data.error) alert(data.error);
+            else loadVideos();
+        }
+
+        async function grabFrame() {
+            const filename = document.getElementById("thumbFileSelect").value;
+            const timestamp = document.getElementById("frameTime").value.trim() || "00:00:01";
+            if (!filename) return alert("Select a video first!");
+
+            document.getElementById("grabStatus").innerText = "Capturing HD frame...";
+            const res = await fetch("/grab_frame", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ filename, timestamp })
+            });
+            const data = await res.json();
+            if (data.error) {
+                document.getElementById("grabStatus").innerText = "❌ " + data.error;
+                return;
+            }
+            const img = document.getElementById("grabbedImg");
+            img.src = data.image_url;
+            img.style.display = "block";
+            document.getElementById("grabStatus").innerText = "✅ Frame saved in 'thumbnails' folder!";
+        }
+
+        function openChatGPT() {
+            const promptText = document.getElementById("chatgptPrompt").value;
+            navigator.clipboard.writeText(promptText);
+            window.open("https://chatgpt.com/", "_blank", "width=650,height=750");
+        }
+
+        function openYouTubeUpload() { window.open("https://www.youtube.com/upload", "_blank"); }
+        async function openFolder() { await fetch("/open_not_uploaded_folder", { method: "POST" }); }
+        async function openThumbFolder() { await fetch("/open_thumbnails_folder", { method: "POST" }); }
+
+        async function markUploaded(filename) {
+            const res = await fetch("/mark_uploaded", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ filename })
+            });
+            const data = await res.json();
+            if (data.status === "moved") loadVideos();
+        }
+
+        async function fetchFormats() {
+            const url = document.getElementById("urlInput").value.trim();
+            const status = document.getElementById("fetchStatus");
+            const preview = document.getElementById("previewBox");
+
+            if (!url) return alert("Paste a URL first!");
+            status.innerText = "Fetching available qualities...";
+            preview.style.display = "none";
+
+            try {
+                const res = await fetch("/get_formats", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ url })
+                });
+                const data = await res.json();
+                if (data.error) { status.innerText = "❌ Error: " + data.error; return; }
+
+                document.getElementById("videoTitle").innerText = data.title;
+                document.getElementById("thumb").src = data.thumbnail;
+
+                const select = document.getElementById("resSelect");
+                select.innerHTML = `<option value="">-- Select Quality --</option>`;
+                select.innerHTML += `<option value="mp3">🎵 Music / Audio Only (MP3 - 320kbps)</option>`;
+                data.resolutions.forEach(h => {
+                    let label = `🎬 Video - ${h}p`;
+                    if (h === 4320) label += " (8K)";
+                    else if (h === 2160) label += " (4K)";
+                    else if (h === 1440) label += " (2K)";
+                    else if (h === 1080) label += " (Full HD)";
+                    select.innerHTML += `<option value="${h}">${label}</option>`;
+                });
+
+                status.innerText = "✅ Qualities loaded! Right side se select karo.";
+                preview.style.display = "block";
+            } catch (err) {
+                status.innerText = "❌ Failed to connect to server.";
+            }
+        }
+
+        async function startDownload() {
+            const url = document.getElementById("urlInput").value.trim();
+            const resolution = document.getElementById("resSelect").value;
+            const start_time = document.getElementById("dlStart").value.trim();
+            const end_time = document.getElementById("dlEnd").value.trim();
+
+            if (!url) return alert("Paste a URL first!");
+            if (!resolution) return alert("Please select a quality from the dropdown first!");
+
+            document.getElementById("dlProgressBox").style.display = "block";
+            document.getElementById("dlBar").style.width = "0%";
+            document.getElementById("dlStatusText").innerText = "Starting download...";
+
+            await fetch("/start_download", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ url, resolution, start_time, end_time })
+            });
+
+            if (dlTimer) clearInterval(dlTimer);
+            dlTimer = setInterval(async () => {
+                const res = await fetch("/download_status");
+                const st = await res.json();
+                document.getElementById("dlBar").style.width = st.percent + "%";
+                document.getElementById("dlStatusText").innerText = st.message;
+                if (st.state === "done" || st.state === "error") {
+                    clearInterval(dlTimer);
+                    if (st.state === "done") loadVideos();
+                }
+            }, 1000);
+        }
+
+        function pollEditStatus() {
+            document.getElementById("editProgressBox").style.display = "block";
+            document.getElementById("editBar").style.width = "0%";
+            if (editTimer) clearInterval(editTimer);
+            editTimer = setInterval(async () => {
+                const r = await fetch("/edit_status");
+                const st = await r.json();
+                document.getElementById("editBar").style.width = st.percent + "%";
+                document.getElementById("editStatusText").innerText = st.message;
+                if (st.state === "done" || st.state === "error") {
+                    clearInterval(editTimer);
+                    if (st.state === "done") loadVideos();
+                }
+            }, 1000);
+        }
+
+        async function startEdit() {
+            const existingFile = document.getElementById("existingFileSelect").value;
+            const fileInput = document.getElementById("videoFileInput");
+            const startTime = document.getElementById("editStart").value.trim();
+            const endTime = document.getElementById("editEnd").value.trim();
+            const speed = document.getElementById("speedSlider").value;
+
+            if (!existingFile && fileInput.files.length === 0) {
+                return alert("Please select a video or upload one first!");
+            }
+
+            const formData = new FormData();
+            if (fileInput.files.length > 0) formData.append("video_file", fileInput.files[0]);
+            else formData.append("existing_file", existingFile);
+            formData.append("start_time", startTime);
+            formData.append("end_time", endTime);
+            formData.append("speed", speed);
+
+            document.getElementById("editStatusText").innerText = "Starting speed editor...";
+            const res = await fetch("/start_edit", { method: "POST", body: formData });
+            const data = await res.json();
+            if (data.error) return alert(data.error);
+            pollEditStatus();
+        }
+
+        async function startShorts(style) {
+            const filename = document.getElementById("existingFileSelect").value;
+            if (!filename) return alert("Select a video from 'not_uploaded' first!");
+
+            document.getElementById("editStatusText").innerText = "Starting Shorts conversion...";
+            const res = await fetch("/start_shorts", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ filename, style })
+            });
+            const data = await res.json();
+            if (data.error) return alert(data.error);
+            pollEditStatus();
+        }
+    </script>
+</body>
+</html>
